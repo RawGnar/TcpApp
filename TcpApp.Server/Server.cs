@@ -7,35 +7,34 @@ using System.Text.Json;
 using System.Xml;
 using TcpApp_Classes;
 
-var endpoint = new IPEndPoint(IPAddress.Loopback, 5005);
+var endpoint = new IPEndPoint(IPAddress.Any, 5005);
 var listener = new TcpListener(endpoint); //Skapa en endpoint att lyssna på och en TcpListener som lyssnar på den
+
 Console.WriteLine("Welcome to the TCP Echo-Chamber!");
+
 listener.Start();
-Console.WriteLine("Listening");
+
 //App väntar på en connection
+Console.WriteLine("Listening");
 using var tcpClient = await listener.AcceptTcpClientAsync();
-using var stream = tcpClient.GetStream();
+using var handler = tcpClient.Client;
 //När en klient kopplar upp accepteras kopplingen
 //Ur TcpClient skapas StreamReader och StreamWriter för att läsa och skriva till strömmen
 Console.WriteLine("Accepted connection");
 
 while (tcpClient.Connected)
 {
-    using var reader = new StreamReader(stream, new UTF8Encoding(false));
-    using var writer = new StreamWriter(stream, new UTF8Encoding(false));
     
     try
     {
         //Request
-        var json = string.Empty;
-        Console.WriteLine("Waiting for a message... ");
-        while (!reader.EndOfStream)
-        {
-            json = await reader.ReadToEndAsync();
-        }
+        byte[] buffer = new byte[1024];
+        var length = await handler.ReceiveAsync(buffer, SocketFlags.None);
         
+        var data = buffer.Take(length).ToArray();
 
-        var chatObject = JsonSerializer.Deserialize<ChatObject>(json);
+        var chatObject = JsonSerializer.Deserialize<ChatObject>(data);
+
         Console.WriteLine(
         $"[{chatObject.TimeStamp}] " +
         $"Received -> '{chatObject.Message}' \n" +
@@ -49,10 +48,9 @@ while (tcpClient.Connected)
         if (responseObject.Message == null)
             responseObject.Message = "<<EMPTY>>";
 
-        var data = JsonSerializer.Serialize(responseObject);
+        var json = JsonSerializer.Serialize(responseObject);
 
-        await writer.WriteAsync(data);
-        await writer.FlushAsync();
+        await handler.SendAsync(Encoding.UTF8.GetBytes(json), SocketFlags.None);
         Console.WriteLine($"Send complete.");
     }
     catch (Exception ex)

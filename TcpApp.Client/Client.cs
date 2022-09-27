@@ -7,13 +7,10 @@ using TcpApp_Classes;
 
 using var tcpClient = new TcpClient();
 await tcpClient.ConnectAsync(IPAddress.Loopback, 5005);
+using var connection = tcpClient.Client;
 
-using var stream = tcpClient.GetStream();
-
-while (true)
+while (tcpClient.Connected)
 {
-    using var reader = new StreamReader(stream, new UTF8Encoding(false));
-    using var writer = new StreamWriter(stream, new UTF8Encoding(false));
     try
     {
         //Request (send)
@@ -23,29 +20,25 @@ while (true)
         if (chatObject.Message == null)
             chatObject.Message = "<<EMPTY>>";
 
-
         var json = JsonSerializer.Serialize(chatObject);
 
-        await writer.WriteAsync(json);
-        await writer.FlushAsync();
+        await connection.SendAsync(Encoding.UTF8.GetBytes(json), SocketFlags.None);
 
         //Response (receive)
         Console.WriteLine("Message sent. Waiting for response.. ");
 
-        var jsonResponse = string.Empty;
-        
-        while (!reader.EndOfStream)
-        {
-            jsonResponse = await reader.ReadToEndAsync();
-        }
+        var buffer = new byte[1024];
+        var length = await connection.ReceiveAsync(buffer, SocketFlags.None);
+
+        var data = buffer.Take(length).ToArray();
         
 
-        var responseObject = JsonSerializer.Deserialize<ChatObject>(jsonResponse);
+        var responseObject = JsonSerializer.Deserialize<ChatObject>(Encoding.UTF8.GetString(data));
 
         Console.WriteLine(
-            $"[{chatObject.TimeStamp}] " +
-            $"Received -> '{chatObject.Message}' \n" +
-            $"from {chatObject.SourceName}");
+            $"[{responseObject.TimeStamp}] " +
+            $"Received -> '{responseObject.Message}' \n" +
+            $"from {responseObject.SourceName}");
 
     }
     catch (Exception ex)

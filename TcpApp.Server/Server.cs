@@ -29,7 +29,6 @@ Console.WriteLine();
 
 while (tcpClient.Connected) //Loopar tills kopplingen bryts
 { 
-    
     try
     {
         #region Receive
@@ -41,6 +40,7 @@ while (tcpClient.Connected) //Loopar tills kopplingen bryts
         var data = buffer.Take(length).ToArray(); //En ny byte array skapas utan tomma platser.
 
         //Datan som tas emot är en JSON-sträng som kan deserialiseras till ett ChatObject.
+        //ChatObject innehåller meddelande, en timestamp och vem som skickar. 
         var chatObject = JsonSerializer.Deserialize<ChatObject>(data); 
         //Objektet används för att skriva till konsolen.
         Console.WriteLine(

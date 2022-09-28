@@ -29,6 +29,8 @@ while (tcpClient.Connected) //Loopar tills koppling stängs
         Console.Write("Input your message: ");
 
         ChatObject chatObject = CreateChatObject(Console.ReadLine()); //Användarens input används för att skapa nytt ChatObject.
+                                                                      //ChatObject innehåller meddelandet, en timestamp och vem som skickar. 
+
 
         if (chatObject.Message.ToLower() == "exit") //Simpel quit funktionalitet
         {

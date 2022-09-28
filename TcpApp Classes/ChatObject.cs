@@ -2,7 +2,7 @@
 {
     public class ChatObject
     {
-        public string Message { get; set; }
+        public string? Message { get; set; }
         public string SourceName { get; set; }
         public string TimeStamp { get; set; } 
 
